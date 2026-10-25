@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/activities",
+      "destination": "/api/activities.js"
+    }
+  ]
+}
