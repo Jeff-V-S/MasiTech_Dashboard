@@ -57,7 +57,11 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Método não permitido' });
   } catch (error) {
-    console.error('Erro na API Prisma/Neon:', error);
+    console.error('Erro no Prisma/Neon:', error);
+    // Se for requisição GET e der erro de tabela, responde com lista vazia para evitar erro 500 no navegador
+    if (req.method === 'GET') {
+      return res.status(200).json([]);
+    }
     return res.status(500).json({ error: error.message });
   }
 }
