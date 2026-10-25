@@ -40,7 +40,12 @@ export default function App() {
   };
 
   const create = (data: NewActivity) => run(() => sendAction({ action: 'CREATE', ...data }));
-  const move = (id: string, stage: Stage) => run(() => sendAction({ action: 'UPDATE_STAGE', id, stage }));
+  const move = (id: string, stage: Stage) => {
+    if (activities.find(a => a.id === id)?.stage === stage) return;
+    // Atualização otimista: o card muda de coluna na hora, a API confirma depois.
+    setActivities(list => list.map(a => (a.id === id ? { ...a, stage } : a)));
+    return run(() => sendAction({ action: 'UPDATE_STAGE', id, stage }));
+  };
   const remove = (id: string) => run(() => sendAction({ action: 'DELETE', id }));
 
   return (

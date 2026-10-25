@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Activity } from '../types';
 
 interface Props {
@@ -8,8 +9,19 @@ interface Props {
 }
 
 export default function ActivityCard({ activity, onPrev, onNext, onDelete }: Props) {
+  const [dragging, setDragging] = useState(false);
+
   return (
-    <div className="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition">
+    <div
+      draggable
+      onDragStart={e => {
+        e.dataTransfer.setData('text/plain', activity.id);
+        e.dataTransfer.effectAllowed = 'move';
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
+      className={`bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-grab active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+    >
       <div className="flex justify-between items-start">
         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">{activity.code || 'MST'}</span>
         <span className="text-[10px] font-bold text-amber-600">{activity.priority || 'Média'}</span>
