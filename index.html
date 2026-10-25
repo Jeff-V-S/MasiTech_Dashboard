@@ -6,15 +6,14 @@
     try {
       const res = await fetch('/api/activities');
       if (res.ok) {
-        activities = await res.json();
-        render();
-        document.getElementById('syncBadge').innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>PostgreSQL (Neon) Ativo</span>
-        `;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          activities = data;
+          render();
+        }
       }
     } catch (err) {
-      console.error("Erro ao conectar com a API:", err);
+      console.error("Erro ao carregar dados da API:", err);
     }
   }
 
@@ -55,7 +54,7 @@
       'Conclusão': document.getElementById('col-conclusao')
     };
 
-    Object.values(cols).forEach(col => { if(col) col.innerHTML = ''; });
+    Object.values(cols).forEach(col => { if (col) col.innerHTML = ''; });
     const counts = { 'Preparo do Material': 0, 'Montagem': 0, 'Soldagem': 0, 'Acabamento': 0, 'Pintura': 0, 'Conclusão': 0 };
 
     activities.forEach(act => {
@@ -67,8 +66,8 @@
 
       card.innerHTML = `
         <div class="flex justify-between items-start">
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${act.code}</span>
-          <span class="text-[10px] font-bold text-amber-600">${act.priority}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${act.code || 'MST'}</span>
+          <span class="text-[10px] font-bold text-amber-600">${act.priority || 'Média'}</span>
         </div>
         <h4 class="font-bold text-slate-800 text-sm mt-1.5">${act.name}</h4>
         <p class="text-xs text-slate-500">${act.client || 'Sem cliente'}</p>
@@ -84,6 +83,7 @@
       if (cols[act.stage]) cols[act.stage].appendChild(card);
     });
 
+    // Eventos com checagem segura
     document.querySelectorAll('.btn-del').forEach(b => {
       b.onclick = () => deleteActivity(b.dataset.id);
     });
@@ -106,40 +106,62 @@
       };
     });
 
-    document.getElementById('cnt-preparo').innerText = counts['Preparo do Material'];
-    document.getElementById('cnt-montagem').innerText = counts['Montagem'];
-    document.getElementById('cnt-soldagem').innerText = counts['Soldagem'];
-    document.getElementById('cnt-acabamento').innerText = counts['Acabamento'];
-    document.getElementById('cnt-pintura').innerText = counts['Pintura'];
-    document.getElementById('cnt-conclusao').innerText = counts['Conclusão'];
+    // Atualização segura de contadores
+    const elPreparo = document.getElementById('cnt-preparo');
+    const elMontagem = document.getElementById('cnt-montagem');
+    const elSoldagem = document.getElementById('cnt-soldagem');
+    const elAcabamento = document.getElementById('cnt-acabamento');
+    const elPintura = document.getElementById('cnt-pintura');
+    const elConclusao = document.getElementById('cnt-conclusao');
+
+    if (elPreparo) elPreparo.innerText = counts['Preparo do Material'];
+    if (elMontagem) elMontagem.innerText = counts['Montagem'];
+    if (elSoldagem) elSoldagem.innerText = counts['Soldagem'];
+    if (elAcabamento) elAcabamento.innerText = counts['Acabamento'];
+    if (elPintura) elPintura.innerText = counts['Pintura'];
+    if (elConclusao) elConclusao.innerText = counts['Conclusão'];
 
     const total = activities.length;
     const pct = total > 0 ? Math.round((counts['Conclusão'] / total) * 100) : 0;
-    document.getElementById('cnt-total').innerText = pct + '%';
-    document.getElementById('bar-progress').style.width = pct + '%';
+    const elTotal = document.getElementById('cnt-total');
+    const elBar = document.getElementById('bar-progress');
+    if (elTotal) elTotal.innerText = pct + '%';
+    if (elBar) elBar.style.width = pct + '%';
 
     if (window.lucide) window.lucide.createIcons();
   }
 
-  const modal = document.getElementById('taskModal');
-  document.getElementById('btnNewActivity').onclick = () => { modal.classList.remove('hidden'); modal.classList.add('flex'); };
-  document.getElementById('btnCloseModal').onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
-  document.getElementById('btnCancelModal').onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+  // Mapeamento seguro dos botões do Modal
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('taskModal');
+    const btnNew = document.getElementById('btnNewActivity');
+    const btnClose = document.getElementById('btnCloseModal');
+    const btnCancel = document.getElementById('btnCancelModal');
+    const form = document.getElementById('activityForm');
 
-  document.getElementById('activityForm').onsubmit = async (e) => {
-    e.preventDefault();
-    await createActivity({
-      name: document.getElementById('itemName').value,
-      code: document.getElementById('itemCode').value,
-      client: document.getElementById('clientName').value,
-      stage: document.getElementById('stageSelect').value,
-      priority: document.getElementById('prioritySelect').value
-    });
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    e.target.reset();
-  };
+    if (btnNew && modal) btnNew.onclick = () => { modal.classList.remove('hidden'); modal.classList.add('flex'); };
+    if (btnClose && modal) btnClose.onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+    if (btnCancel && modal) btnCancel.onclick = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
 
-  loadData();
-  setInterval(loadData, 3000); // Sincroniza a cada 3 segundos com o banco do Neon
+    if (form) {
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        await createActivity({
+          name: document.getElementById('itemName')?.value || '',
+          code: document.getElementById('itemCode')?.value || '',
+          client: document.getElementById('clientName')?.value || '',
+          stage: document.getElementById('stageSelect')?.value || 'Preparo do Material',
+          priority: document.getElementById('prioritySelect')?.value || 'Média'
+        });
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+        e.target.reset();
+      };
+    }
+
+    loadData();
+    setInterval(loadData, 3000);
+  });
 </script>
