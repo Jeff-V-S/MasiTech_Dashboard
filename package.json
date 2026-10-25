@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "prisma generate"
+    "build": "prisma db push && prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^5.12.1"
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
-    "prisma": "^5.12.1"
+    "prisma": "^5.22.0"
   }
 }
